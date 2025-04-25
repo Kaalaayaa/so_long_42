@@ -2,8 +2,9 @@
 
 void init_game(t_game *game)
 {
-    int i;
-    int j;
+	printf("Initializing game...\n");
+	int i;
+	int j;
 
     game->collected = 0;
     game->total_collectibles = 0;
@@ -49,26 +50,33 @@ int is_move_valid(t_game *game, int x, int y)
 
 void move_player(t_game *game, int dir_x, int dir_y)
 {
-    int new_pos_x;
-    int new_pos_y;
+    int new_x = game->player_x + dir_x;
+    int new_y = game->player_y + dir_y;
 
-    new_pos_x = game->player_x + dir_x;
-    new_pos_y = game->player_y + dir_y;
+    // Directional sprite switching
+    if (dir_x == -1)
+        game->img_player = game->img_player_left;
+    else if (dir_x == 1)
+        game->img_player = game->img_player_right;
+    else if (dir_y == -1)
+        game->img_player = game->img_player_up;
+    else if (dir_y == 1)
+        game->img_player = game->img_player_down;
 
-    //if (!is_move_valid(game, dir_x, dir_y))
-    //    return;
-    if (!is_move_valid(game, new_pos_x, new_pos_y))
-    return;
-    
-    if (game->map[new_pos_y][new_pos_x] == 'C')
+    if (!is_move_valid(game, new_x, new_y))
+        return;
+
+    // Collectible
+    if (game->map[new_y][new_x] == 'C')
     {
         game->collected++;
-        game->map[new_pos_y][new_pos_x] = '0';
+        game->map[new_y][new_x] = '0';
     }
 
-    if (game->map[new_pos_y][new_pos_x] == 'E')
+    // Exit
+    if (game->map[new_y][new_x] == 'E')
     {
-        if(game->collected == game->total_collectibles)
+        if (game->collected == game->total_collectibles)
         {
             printf("You win! Total moves: %d\n", game->move_count + 1);
             exit_game(game);
@@ -79,10 +87,36 @@ void move_player(t_game *game, int dir_x, int dir_y)
             return;
         }
     }
+
+    // Move player on map
     game->map[game->player_y][game->player_x] = '0';
-    game->map[new_pos_y][new_pos_x] = 'P';
-    game->player_x = new_pos_x;
-    game->player_y = new_pos_y;
+    game->map[new_y][new_x] = 'P';
+    game->player_x = new_x;
+    game->player_y = new_y;
     game->move_count++;
+
     printf("Moved: %d steps\n", game->move_count);
+}
+
+void handle_key(mlx_key_data_t keydata, void *param)
+{
+    t_game *game = (t_game *)param;
+    if(keydata.action != MLX_PRESS && keydata.action != MLX_REPEAT)
+        return;
+
+         // Debugging output: Print the key that was pressed
+    printf("Key pressed: %d\n", keydata.key);
+    
+        if (keydata.key == MLX_KEY_ESCAPE)
+            exit_game(game);
+        else if (keydata.key == MLX_KEY_UP)
+            move_player(game, 0, -1);
+        else if(keydata.key == MLX_KEY_LEFT)
+            move_player(game, -1, 0);
+        else if(keydata.key == MLX_KEY_DOWN)
+            move_player(game, 0, 1);
+        else if(keydata.key == MLX_KEY_RIGHT)
+            move_player(game, 1, 0);
+        
+        render_map(game);
 }

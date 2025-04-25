@@ -1,43 +1,54 @@
-NAME = so_long
-LIBFT = libft/libft.a
-LIBFTDIR = ./libft
-SRC_DIR = src
-SRC = $(wildcard $(SRC_DIR)/*.c) # Get all .c files from src/
-OBJS := $(SRC:%.c=%.o)
-CC = cc
-CCFLAGS = -Wall -Werror -Wextra
+NAME        := so_long
 
-# MiniLibX
-MLX_DIR = mlx # Path to your mlx folder
-MLX_FLAGS = -I$(MLX_DIR) -L$(MLX_DIR) -lmlx -framework OpenGL -framework AppKit
+# Compiler and Flags
+CC          := cc
+CFLAGS      := -Wall -Wextra -Werror -Ofast
 
-all: $(NAME)
+# Directories
+SRC_DIR     := src
+LIBFTDIR    := ./libft
+MLX_DIR     := ./lib/MLX42
+
+# Libraries
+LIBFT       := $(LIBFTDIR)/libft.a
+HEADERS     := -I$(LIBFTDIR) -I$(MLX_DIR)/include
+
+# Adjust this if using 42Homebrew (uncomment the one you use)
+GLFW_LIB    := -L/opt/homebrew/opt/glfw/lib       # Homebrew
+# GLFW_LIB := -L/Users/$(USER)/.brew/opt/glfw/lib # 42Homebrew
+
+FRAMEWORKS  := -framework Cocoa -framework OpenGL -framework IOKit
+LIBS        := $(MLX_DIR)/build/libmlx42.a $(GLFW_LIB) -lglfw -ldl -pthread -lm $(FRAMEWORKS)
+
+# Sources and Objects
+SRCS        := $(wildcard $(SRC_DIR)/*.c)
+OBJS        := $(SRCS:.c=.o)
+
+# Targets
+all: libmlx $(LIBFT) $(NAME)
+
+libmlx:
+	@cmake $(MLX_DIR) -B $(MLX_DIR)/build > /dev/null
+	@cmake --build $(MLX_DIR)/build -j4 > /dev/null
 
 $(LIBFT):
-	make -C $(LIBFTDIR)
+	@make -C $(LIBFTDIR)
 
-
-#(NAME): $(OBJS) $(LIBFT)
-#	$(CC) $(OBJS) $(LIBFT) -Lmlx_linux -lmlx_Linux -L/usr/lib -Imlx_linux -lXext -lX11 -lm -lz -o $(NAME)
-
-#%.o: %.c
-#	$(CC) $(CCFLAGS) -I/usr/include -Imlx_linux -Ilibft -o $@ -c $<
-
-#MAC VERSIONls
-$(NAME): $(OBJS) $(LIBFT)
-	$(CC) $(OBJS) $(LIBFT) $(MLX_FLAGS) -o $(NAME)
+$(NAME): $(OBJS)
+	@$(CC) $(OBJS) $(LIBFT) $(LIBS) -o $(NAME)
 
 %.o: %.c
-	$(CC) $(CCFLAGS) -I$(LIBFTDIR) -I$(MLX_DIR) -o $@ -c $<
+	@$(CC) $(CFLAGS) $(HEADERS) -o $@ -c $< && printf "Compiling: $(notdir $<)\n"
 
 clean:
-	rm -f $(OBJS)
-	make -C $(LIBFTDIR) clean
+	@rm -f $(OBJS)
+	@make -C $(LIBFTDIR) clean
+	@rm -rf $(MLX_DIR)/build
 
 fclean: clean
-	rm -f $(NAME)
-	make -C $(LIBFTDIR) fclean
+	@rm -f $(NAME)
+	@make -C $(LIBFTDIR) fclean
 
 re: fclean all
 
-.PHONY: all clean fclean re
+.PHONY: all clean fclean re libmlx
